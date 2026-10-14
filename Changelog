@@ -1,0 +1,42 @@
+# 🏛️ Architecture & Game-Theoretic Design Revisions
+
+> **Document Version:** 1.1  
+> **Last Updated:** October 2026  
+> **Author:** John Leonardo (賴鴻名)
+
+This document tracks theoretical refinements, methodological corrections, and parameter adjustments made to the `Gig-Economy-Game-Theory-Simulation` architecture based on theoretical peer-review feedback.
+
+---
+
+## 📌 Summary of Key Architectural Changes
+
+| Category | Original Specification | Revised Specification | Theoretical Justification |
+| :--- | :--- | :--- | :--- |
+| **Terminology** | `Greedy Nash Equilibrium` | `Uncoordinated Myopic Driver Choice` | Resolves contradiction: Greedy heuristics are bounded-rational, whereas Nash Equilibrium requires sequential best-response rationality. |
+| **Driver Utility ($EU_i$)** | $U_i = R - C(d) - \Theta(n)$ | $EU_i = p_i \cdot R_i - C(d) - w^{\text{res}} T_i - \kappa_i$ | Incorporates matching probability $p(g,t) = \min(1, D/N)$ and opportunity cost of wait/transit time. |
+| **Spatial Metric** | Spatial Uniform Dispersion | Spatial Mismatch Index ($M_t$) | Evaluates alignment of driver density to demand distribution ($80\% / 20\%$) rather than inefficient uniform dispersion. |
+| **Platform Economy** | Unconstrained Subsidies | Self-Funding Budget Constraint ($\Pi_t \ge 0$) | Ensures dynamic subsidies are funded via commission/surge revenue, preventing fictitious liquidity injections. |
+| **Game Architecture** | Unspecified Multi-Stage Game | **Stackelberg Leader-Follower Game** | Formally models Platform as Leader (setting pricing/subsidies) and Drivers as Followers (spatial reallocation). |
+
+---
+
+## 🔬 Detailed Technical Justifications
+
+### 1. Terminology & Behavioral Assumptions
+* **Issue:** Mixing "Greedy" (myopic short-term optimization) with "Nash Equilibrium" creates a red flag in formal game theory.
+* **Correction:** The baseline scenario is explicitly defined as **Uncoordinated Myopic Driver Choice**. Strategic equilibrium is analyzed separately via empirical regret metrics ($\epsilon_t$).
+
+### 2. Matching Probability & Utility Function
+* **Issue:** Assuming $100\%$ order pickup probability ignores spatial congestion externalities at high-demand hotspots.
+* **Correction:** Matching probability $p_i(g,t)$ dynamically decays as driver density $N_{g,t}$ exceeds local demand $D_{g,t}$, directly causing idle time costs $w^{\text{res}} \cdot T_i$.
+
+### 3. Spatial Alignment vs. Spatial Equality
+* **Issue:** Driving supply toward a uniform spatial distribution is economically sub-optimal when $80\%$ of orders originate from the core $3 \times 3$ grid.
+* **Correction:** Adopting the **Spatial Mismatch Index ($M_t$)**:
+  $$M_t = \frac{1}{2} \sum_{g=1}^{100} \left\vert{} \frac{N_{g,t}}{N_t} - \frac{D_{g,t}}{D_t} \right\vert{}$$
+  This minimizes supply-demand divergence while respecting spatial demand heterogeneity.
+
+### 4. Platform Profit & Subsidy Balance Sheet
+* **Issue:** Unrestricted subsidies artificially inflate order completion rates without accounting for platform bankruptcy risk.
+* **Correction:** Imposed a non-negative profit constraint:
+  $$\Pi_t = \text{Commission Revenue}_t - \sum_g b_{g,t} Q_{g,t} \ge 0$$
