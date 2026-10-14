@@ -1,85 +1,92 @@
 # 📊 Gig-Economy-Game-Theory-Simulation
 
-> **An Empirical & Computational Microeconomic Analysis of Algorithmic Pricing and Worker Decision-Making in Two-Sided Platform Markets.**
+> **An Computational Microeconomic Simulation of Algorithmic Incentives, Spatial Congestion, and Worker Welfare in Two-Sided Platform Markets.**
 
 ---
 
 ## 📌 Executive Summary & Abstract
 
-This project develops an agent-based economic simulation in Python to model the dynamic interactions between ride-hailing/delivery platforms and gig platform workers under algorithmic dynamic pricing (surge pricing).
+This project develops an agent-based economic simulation in Python to model the dynamic spatial-temporal interactions between ride-hailing/delivery platforms and gig workers under algorithmic dynamic pricing and location-based dynamic subsidies.
 
-By integrating **Microeconomic Surplus Analysis**, **Sequential Non-Cooperative Games**, and **Markov Decision Processes (MDP)**, this repository simulates how workers optimize their labor supply decisions under information asymmetry and shifting platform commission structures.
+By integrating **Microeconomic Surplus Analysis**, **Sequential Non-Cooperative Games (Stackelberg Framework)**, and **Multi-Agent Decision Processes**, this repository simulates how decentralized workers optimize their labor supply decisions under spatial congestion externalities and shifting platform commission structures.
 
 ---
 
 ## 🧠 Theoretical Framework & Economic Modeling
 
-### 1. Driver Utility Function
+### 1. Expected Driver Utility Function
 
-Each individual driver agent $i$ decides whether to accept an order or move to a grid cell based on the following net utility function:
+Each individual driver agent $i$ decides whether to accept an order, stay, or relocate to grid cell $g$ based on the following expected net utility function:
 
-$$U_i = R - C(d) - \Theta(n)$$
+$$EU_i(g,t) = p_i(g,t) \cdot R_i(g,t) - C(d) - w_i^{\text{res}} \cdot T_i(g,t) - \kappa_i(n_g)$$
 
 Where:
-- $R$: Expected revenue from completing the ride/order.
-- $C(d)$: Marginal operational cost as a function of travel distance $d$ (Deadhead distance).
-- $\Theta(n)$: Congestion externality penalty, driven by driver concentration $n$ in the local grid cell:
-  $$\Theta(n) \propto \frac{n}{t_{\text{wait}}}$$
-
-### 2. Game-Theoretic Formulation (Extensive Form Game)
-The interaction between the Platform (Player 1) and the Collective Gig Workers (Player 2) is modeled as a multi-stage sequential game:
-
-1. **Stage 1 (Platform):** Sets dynamic multiplier $S_t \in [1.0, 3.5]$ based on estimated real-time consumer demand $\hat{D}_t$.
-2. **Stage 2 (Workers):** Observe localized expected payout and decide whether to **[Log In / Accept]** or **[Log Off / Reject]** based on reservation wage $w^{res}_i$.
-3. **Stage 3 (Market Equilibrium):** Market clears; price elasticity of supply $\epsilon_s$ updates the matching algorithm.
+- $p_i(g,t)$: Probability of receiving and completing an order in grid $g$ at time $t$, modeled as $p(g,t) = \min\left(1, \frac{D_{g,t}}{N_{g,t}}\right)$.
+- $R_i(g,t)$: Expected payout conditional on order completion.
+- $C(d)$: Operational marginal cost associated with travel distance $d$ (Deadhead distance).
+- $w_i^{\text{res}}$: Driver's opportunity cost of time (Reservation wage per time unit).
+- $T_i(g,t)$: Expected time committed, including transit and waiting time.
+- $\kappa_i(n_g)$: Congestion externality penalty driven by driver concentration $n_g$.
 
 ---
 
-## 🛠️ Key Features & Technical Architecture
+### 2. Stackelberg Game Formulation (Platform & Workers)
 
-- **Simulated Economic Environment:** Agent-based model representing heterogeneous driver preferences and spatial demand shifts.
-- **Game-Theoretic Equilibrium Solvers:** Empirical calculation of Nash Equilibrium and Sequential Subgame Perfect Equilibrium (SPE).
-- **Visualization Suite:** Dynamic plotting of driver surplus, platform revenue, and market clearing price paths using `matplotlib` and `seaborn`.
+The interaction is modeled as a multi-stage sequential game:
+
+1. **Stage 1 — Platform (Leader):** Observes predicted market state $\hat{D}_{g,t}$ and sets spatial surge multipliers $S_{g,t}$ or location-based subsidies $b_{g,t}$ subject to a budget constraint:
+   $$\Pi_t = \text{Commission Revenue}_t - \sum_g b_{g,t} Q_{g,t} \ge 0$$
+2. **Stage 2 — Workers (Followers):** Observe spatial payout signals, update expected utility $EU_i(g,t)$, and independently select spatial actions or logout.
+3. **Stage 3 — Market Clearing:** Matching algorithm executes; realized driver welfare, consumer surplus, and spatial demand mismatches update system states.
+
+---
 
 ## 🔬 Experimental Architecture & Simulation Design
 
-### 1. Grid Environment Setup
-- **Spatial Grid:** $10 \times 10$ discrete spatial grid ($N = 100$ cells).
-- **Demand Distribution:**
-  - **High-Demand Hotspot ($3 \times 3$ Core Grid):** Generates **80%** of total order demand.
-  - **Low-Demand Suburbs (Remaining 91 cells):** Generates **20%** of total order demand.
-- **Dynamic Demand Generator:** Injects 100 stochastic orders/rides into the grid per time step.
+### 1. Spatial Grid Setup
+- **Environment:** $10 \times 10$ discrete spatial matrix ($N = 100$ cells).
+- **Demand Heterogeneity:**
+  - **High-Demand Core ($3 \times 3$ Hotspot):** Generates **80%** of total stochastic order demand.
+  - **Suburbs (Remaining 91 cells):** Generates **20%** of order demand.
+- **Dynamic Demand Generator:** Injects stochastic orders into the grid per time step.
 
 ---
 
 ### 2. Experimental Scenarios (Counterfactual Analysis)
 
-We simulate and compare two distinct market clearing mechanisms:
+We simulate and compare three distinct market mechanisms:
 
-#### 🔴 Baseline Scenario: Greedy Nash Equilibrium
-- **Mechanism:** Drivers operate purely under local greedy strategies without dynamic price signals.
-- **Behavior:** Drivers independently flock to the $3 \times 3$ Hotspot based on historic demand, ignoring cumulative congestion costs.
-- **Outcome:** High congestion externalities, increased driver waiting times, and spatial supply-demand mismatch in suburban areas.
+#### 🔴 Scenario A: Uncoordinated Myopic Driver Choice (Baseline)
+- **Mechanism:** Drivers operate purely under myopic local greedy heuristics based on historical demand signals, ignoring dynamic congestion costs.
+- **Outcome:** Severe spatial supply-demand mismatch and driver over-clustering at core hotspots.
 
-#### 🔵 Treatment Scenario: Dynamic Tip Subsidies (Dynamic Price Signals)
-- **Mechanism:** The platform algorithmically injects dynamic tip/subsidy signals into low-supply/high-demand grid locations based on the real-time **Driver-to-Order Ratio**.
-- **Behavior:** Decentralized drivers re-evaluate their expected net utility incorporating the dynamic price signal and redistribute spatially.
-- **Outcome:** Optimal spatial dispersion of driver supply across the $10 \times 10$ environment.
+#### 🔵 Scenario B: Location-Based Dynamic Incentives (Treatment)
+- **Mechanism:** The platform algorithmically injects dynamic subsidies $b_{g,t}$ into low-supply/high-demand grid locations based on real-time driver-to-order ratios:
+  $$b_{g,t} = \min\left(b_{\max}, \lambda \cdot \max\left(0, \frac{\hat{D}_{g,t} - N_{g,t}}{\max(1, \hat{D}_{g,t})}\right)\right)$$
+- **Outcome:** Improved spatial dispersion of supply matching actual spatial demand proportions.
+
+#### 🟡 Scenario C: Dynamic Surge Pricing Benchmark
+- **Mechanism:** Dynamic customer price adjustments influencing both demand elasticity and driver compensation.
 
 ---
 
-### 📈 Expected Results & Evaluation Metrics
+### 📈 Primary Research Hypotheses & Evaluation Metrics
 
-1. **Order Completion Rate (Market Efficiency):**
-   - Evaluates total fulfilled orders / generated orders across time steps.
-   - **Hypothesis:** Dynamic tip subsidies will significantly boost completion rates by incentivizing drivers to service suburban orders.
+1. **$H_1$ (Market Efficiency):** Dynamic subsidies significantly increase overall **Order Completion Rate ($CR$)**:
+   $$CR = \frac{\text{Completed Orders}}{\text{Generated Orders}}$$
 
-2. **Average Driver Utility & Platform Revenue:**
-   - Measures net driver welfare ($\bar{U}$) and platform throughput.
-   - **Hypothesis:** Reduction in congestion externalities at hotspots will increase average net driver utility.
+2. **$H_2$ (Spatial Alignment):** Subsidies minimize the **Spatial Mismatch Index ($M_t$)**:
+   $$M_t = \frac{1}{2} \sum_{g=1}^{100} \left\vert{} \frac{N_{g,t}}{N_t} - \frac{D_{g,t}}{D_t} \right\vert{}$$
 
-3. **Welfare Distribution (Consumer & Supply Surplus):**
-   - Quantifies total economic surplus gains generated under dynamic pricing intervention.
+3. **$H_3$ (Welfare Distribution):** Evaluates mean net driver utility $\bar{U}$, consumer surplus, and net platform profitability $\Pi_t$ post-subsidy expenditure.
 
-4. **Spatial Convergence Analysis (Statistical Proof):**
-   - Applies spatial variance and distribution metrics (e.g., Chi-Square / Normal Distribution tests) to statistically demonstrate driver transition from **highly clustered aggregation** to a **balanced spatial equilibrium**.
+4. **$H_4$ (Equilibrium Approximation):** Evaluates approximate Nash Stability via empirical regret metrics ($\epsilon_t$).
+
+---
+
+## 💻 Tech Stack & Simulation Architecture
+
+- **Language:** Python 3.10+
+- **Core Libraries:** `numpy`, `pandas`, `scipy`
+- **Visualization Suite:** `matplotlib`, `seaborn`
+- **Simulation Paradigm:** Agent-Based Modeling (ABM) / Monte Carlo Paired Replications
